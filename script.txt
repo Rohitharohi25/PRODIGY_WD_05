@@ -1,0 +1,84 @@
+const apiKey = 'fd8c5b29b333e26a8e4b32c0f01d9f71'; // Replace with your API key from OpenWeatherMap
+const form = document.getElementById('locationForm');
+const locationInput = document.getElementById('locationInput');
+const geolocationBtn = document.getElementById('geolocationBtn');
+const weatherInfoDiv = document.getElementById('weatherInfo');
+
+// Function to fetch weather data from OpenWeatherMap API
+async function fetchWeather(query) {
+    const apiEndpoint = 'https://api.openweathermap.org/data/2.5/weather?q=vijayawada&appid=fd8c5b29b333e26a8e4b32c0f01d9f71&units=metric';
+
+    try {
+        const response = await fetch(apiEndpoint);
+
+        if (!response.ok) {
+            throw new Error('Weather data not available');
+        }
+
+        const data = await response.json();
+        return data;
+
+    } catch (error) {
+        console.error('Error fetching weather data:', error);
+        throw error; // Re-throw the error for further handling
+    }
+}
+
+// Function to update weather information in the DOM
+function updateWeatherInfo(data) {
+    const { name, main, weather } = data;
+    const temperature = main.temp;
+    const description = weather[0].description;
+
+    weatherInfoDiv.innerHTML = `
+        <h2>Current Weather in ${name}</h2>
+        <p><strong>Temperature:</strong> ${temperature}°C</p>
+        <p><strong>Description:</strong> ${description}</p>
+    `;
+    weatherInfoDiv.style.display = 'block'; // Display weather info div
+}
+
+// Event listener for form submission
+form.addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const location = locationInput.value.trim();
+
+    if (location === '') {
+        alert('Please enter a location');
+        return;
+    }
+
+    try {
+        const weatherData = await fetchWeather('q=${location}');
+        updateWeatherInfo(weatherData);
+    } catch (error) {
+        // Handle error in fetching weather data
+        weatherInfoDiv.innerHTML = '<p>Weather information not available. Please try again later.</p>';
+        weatherInfoDiv.style.display = 'block'; // Display weather info div with error message
+    }
+});
+
+// Event listener for geolocation button
+geolocationBtn.addEventListener('click', async function() {
+    if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser');
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async function(position) {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        try {
+            const weatherData = await fetchWeather('lat=${latitude}&lon=${longitude}');
+            updateWeatherInfo(weatherData);
+        } catch (error) {
+            // Handle error in fetching weather data
+            weatherInfoDiv.innerHTML = '<p>Weather information not available. Please try again later.</p>';
+            weatherInfoDiv.style.display = 'block'; // Display weather info div with error message
+        }
+    }, function(error) {
+        console.error('Error retrieving geolocation:', error);
+        alert('Error retrieving your location');
+    });
+});
